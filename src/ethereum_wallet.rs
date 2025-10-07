@@ -32,7 +32,7 @@ impl EthereumWallet {
         }
     }
 
-    pub fn ethereum_address(&self) -> Address {
+    pub fn canister_ethereum_address(&self) -> Address {
         Address::from(&self.derived_public_key)
     }
 

@@ -31,16 +31,16 @@ pub fn init(maybe_init: Option<InitArg>) {
 }
 
 #[update]
-pub async fn ethereum_address(owner: Option<Principal>) -> String {
+pub async fn canister_ethereum_address(owner: Option<Principal>) -> String {
     let caller = validate_caller_not_anonymous();
     let owner = owner.unwrap_or(caller);
     let wallet = EthereumWallet::new(owner).await;
-    wallet.ethereum_address().to_string()
+    wallet.canister_ethereum_address().to_string()
 }
 
 #[update]
 pub async fn get_balance(address: Option<String>) -> Nat {
-    let address = address.unwrap_or(ethereum_address(None).await);
+    let address = address.unwrap_or(canister_ethereum_address(None).await);
 
     let json = format!(
         r#"{{ "jsonrpc": "2.0", "method": "eth_getBalance", "params": ["{}", "latest"], "id": 1 }}"#,
@@ -88,7 +88,7 @@ pub async fn transaction_count(owner: Option<Principal>, block: Option<BlockTag>
     let rpc_services = read_state(|s| s.evm_rpc_services());
 
     // Log the Ethereum address being checked
-    let address = wallet.ethereum_address().to_string();
+    let address = wallet.canister_ethereum_address().to_string();
     ic_cdk::println!("Getting transaction count for address: {}", address);
 
     let args = GetTransactionCountArgs {

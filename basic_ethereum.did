@@ -40,7 +40,7 @@ service : (opt InitArg) -> {
     // endpoint.
     //
     // If the owner is not set, it defaults to the caller's principal.
-    ethereum_address : (owner: opt principal) -> (text);
+    canister_ethereum_address : (owner: opt principal) -> (text);
 
     // Returns the balance of the given Ethereum address.
     // If no address is provided, the address derived from the caller's principal is used.
