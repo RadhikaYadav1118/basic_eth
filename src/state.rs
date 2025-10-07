@@ -2,8 +2,16 @@ use crate::ecdsa::EcdsaPublicKey;
 use crate::{EcdsaKeyName, EthereumNetwork, InitArg};
 use evm_rpc_canister_types::{EthMainnetService, EthSepoliaService, RpcServices};
 use ic_cdk::api::management_canister::ecdsa::EcdsaKeyId;
-use std::cell::RefCell;
-use std::ops::{Deref, DerefMut};
+use std::{
+    cell::RefCell,
+    ops::{Deref, DerefMut},
+};
+use crate::{
+    ed25519::{get_ed25519_public_key, Ed25519ExtendedPublicKey},
+    Ed25519KeyName, InitArg, SolanaNetwork,
+};
+use candid::Principal;
+use sol_rpc_types::CommitmentLevel;
 
 thread_local! {
     pub static STATE: RefCell<State> = RefCell::default();
@@ -29,6 +37,11 @@ pub struct State {
     ethereum_network: EthereumNetwork,
     ecdsa_key_name: EcdsaKeyName,
     ecdsa_public_key: Option<EcdsaPublicKey>,
+    sol_rpc_canister_id: Option<Principal>,
+    solana_network: SolanaNetwork,
+    solana_commitment_level: CommitmentLevel,
+    ed25519_public_key: Option<Ed25519ExtendedPublicKey>,
+    ed25519_key_name: Ed25519KeyName,
 }
 
 impl State {
@@ -57,6 +70,21 @@ impl State {
             }
         }
     }
+        pub fn ed25519_key_name(&self) -> Ed25519KeyName {
+        self.ed25519_key_name
+    }
+
+    pub fn solana_network(&self) -> &SolanaNetwork {
+        &self.solana_network
+    }
+
+    pub fn solana_commitment_level(&self) -> CommitmentLevel {
+        self.solana_commitment_level.clone()
+    }
+
+    pub fn sol_rpc_canister_id(&self) -> Option<Principal> {
+        self.sol_rpc_canister_id
+    }
 }
 
 impl From<InitArg> for State {
@@ -64,7 +92,13 @@ impl From<InitArg> for State {
         State {
             ethereum_network: init_arg.ethereum_network.unwrap_or_default(),
             ecdsa_key_name: init_arg.ecdsa_key_name.unwrap_or_default(),
-            ..Default::default()
+            ..Default::default(),
+            sol_rpc_canister_id: init_arg.sol_rpc_canister_id,
+            solana_network: init_arg.solana_network.unwrap_or_default(),
+            solana_commitment_level: init_arg.solana_commitment_level.unwrap_or_default(),
+            ed25519_public_key: None,
+            ed25519_key_name: init_arg.ed25519_key_name.unwrap_or_default(),
+
         }
     }
 }
@@ -75,6 +109,10 @@ pub async fn lazy_call_ecdsa_public_key() -> EcdsaPublicKey {
     if let Some(ecdsa_pk) = read_state(|s| s.ecdsa_public_key.clone()) {
         return ecdsa_pk;
     }
+    let public_key =
+        get_ed25519_public_key(read_state(|s| s.ed25519_key_name()), &Default::default()).await;
+    mutate_state(|s| s.ed25519_public_key = Some(public_key.clone()));
+    public_key
     let key_id = read_state(|s| s.ecdsa_key_id());
     let (response,) = ecdsa_public_key(EcdsaPublicKeyArgument {
         canister_id: None,
