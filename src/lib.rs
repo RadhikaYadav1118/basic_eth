@@ -39,6 +39,13 @@ pub async fn canister_ethereum_address(owner: Option<Principal>) -> String {
 }
 
 #[update]
+pub async fn solana_account(owner: Option<Principal>) -> String {
+    let owner = owner.unwrap_or_else(validate_caller_not_anonymous);
+    let wallet = SolanaWallet::new(owner).await;
+    wallet.solana_account().to_string()
+}
+
+#[update]
 pub async fn get_balance(address: Option<String>) -> Nat {
     let address = address.unwrap_or(canister_ethereum_address(None).await);
 
